@@ -213,13 +213,33 @@ const seedDatabase = async () => {
   }
 };
 
-// Start Server
-app.listen(PORT, async () => {
-  console.log(`\n======================================================`);
-  console.log(`[Server] Express app running in development mode.`);
-  console.log(`[Server] API Target: http://localhost:${PORT}`);
-  console.log(`======================================================\n`);
-  
-  await connectDB();
-  await seedDatabase();
-});
+
+ // Local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, async () => {
+    console.log(`[Server] API Target: http://localhost:${PORT}`);
+
+    try {
+      await connectDB();
+      await seedDatabase();
+    } catch (error) {
+      console.error('[Server] Startup failed:', error.message);
+    }
+  });
+}
+
+// Vercel serverless handler (ES Modules)
+export default async function handler(req, res) {
+  try {
+    await connectDB();
+    return app(req, res);
+  } catch (error) {
+    console.error('[Server] Initialization failed:', error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server initialization failed',
+    });
+  }
+}
+
