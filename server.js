@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -12,7 +13,7 @@ import prescriptionRoutes from './routes/prescriptionRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 
-// Models for Auto-Seeding
+// Models for local demo seeding
 import User from './models/User.js';
 import Patient from './models/Patient.js';
 import Appointment from './models/Appointment.js';
@@ -22,26 +23,39 @@ import DiagnosisLog from './models/DiagnosisLog.js';
 dotenv.config();
 
 const app = express();
-const AUTHORIZED_ADMIN_EMAIL = process.env.AUTHORIZED_ADMIN_EMAIL;
-const AUTHORIZED_ADMIN_PASSWORD = process.env.AUTHORIZED_ADMIN_PASSWORD;
 
-// Middlewares
+const AUTHORIZED_ADMIN_EMAIL =
+  process.env.AUTHORIZED_ADMIN_EMAIL?.trim().toLowerCase();
 
- // Middlewares
+const AUTHORIZED_ADMIN_PASSWORD =
+  process.env.AUTHORIZED_ADMIN_PASSWORD;
+
+// CORS configuration
 const allowedOrigins = [
   'https://hackathon-smit-frontend-eight.vercel.app',
   'http://localhost:5173',
 ];
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'OPTIONS',
+    ],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+    ],
+  })
+);
 
 app.use(express.json());
-
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -52,13 +66,12 @@ app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// Health check
 // Root route
 app.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'MedPulse AI Backend is running',
-    health: '/api/health'
+    health: '/api/health',
   });
 });
 
@@ -66,31 +79,47 @@ app.get('/', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 });
 
-// Port & Launch
+// Local development port
 const PORT = process.env.PORT || 5000;
 
-// Auto-seeding function
+// Demo data seeding
+// This runs only in local development.
+// It does not run on Vercel production requests.
 const seedDatabase = async () => {
   try {
-    const totalUsers = await User.countDocuments();
-    if (totalUsers > 0) {
-      console.log('[Seeder] Existing users detected. Skipping seed sequence to preserve data.');
+    if (
+      !AUTHORIZED_ADMIN_EMAIL ||
+      !AUTHORIZED_ADMIN_PASSWORD
+    ) {
+      console.log(
+        '[Seeder] Admin environment variables are missing. Skipping seed.'
+      );
       return;
     }
 
-    console.log('[Seeder] Running auto-seeding sequence...');
+    // Preserve existing data.
+    const totalUsers = await User.countDocuments();
 
-    // 1. Create Staff Accounts
+    if (totalUsers > 0) {
+      console.log(
+        '[Seeder] Existing users detected. Skipping seed sequence to preserve data.'
+      );
+      return;
+    }
+
+    console.log('[Seeder] Running local demo seed...');
+
+    // 1. Create staff and demo accounts
     const admin = await User.create({
       name: 'Asad Ullah (Admin)',
       email: AUTHORIZED_ADMIN_EMAIL,
       password: AUTHORIZED_ADMIN_PASSWORD,
       role: 'admin',
-      subscriptionPlan: 'pro', // Admin is pro
+      subscriptionPlan: 'pro',
       contact: '+923348761317',
     });
 
@@ -99,7 +128,7 @@ const seedDatabase = async () => {
       email: 'doctor@medpulse.com',
       password: 'doctor123',
       role: 'doctor',
-      subscriptionPlan: 'pro', // Upgraded to Pro by default for AI features
+      subscriptionPlan: 'pro',
       specialization: 'Cardiology & General Health',
       contact: '+92 333-4567890',
     });
@@ -113,7 +142,7 @@ const seedDatabase = async () => {
       contact: '+92 311-7654321',
     });
 
-    const patientUser = await User.create({
+    await User.create({
       name: 'Ahmed Hassan',
       email: 'patient@medpulse.com',
       password: 'patient123',
@@ -122,20 +151,21 @@ const seedDatabase = async () => {
       contact: '+92 300-1234567',
     });
 
-    console.log('[Seeder] Created default user accounts:');
-    console.log(` - Admin: ${AUTHORIZED_ADMIN_EMAIL} / ${AUTHORIZED_ADMIN_PASSWORD}`);
-    console.log(' - Doctor: doctor@medpulse.com / doctor123');
-    console.log(' - Receptionist: receptionist@medpulse.com / recep123');
-    console.log(' - Patient: patient@medpulse.com / patient123');
+    console.log(
+      '[Seeder] Demo accounts created successfully.'
+    );
 
-    // 2. Create Patients
+    // 2. Create sample patients
     const patient1 = await Patient.create({
       name: 'Ahmed Hassan',
       age: 42,
       gender: 'male',
       contact: '+92 300-1234567',
       createdBy: receptionist._id,
-      medicalHistory: ['Hypertension', 'Mild Dust Allergy'],
+      medicalHistory: [
+        'Hypertension',
+        'Mild Dust Allergy',
+      ],
     });
 
     const patient2 = await Patient.create({
@@ -153,10 +183,13 @@ const seedDatabase = async () => {
       gender: 'male',
       contact: '+92 345-1122334',
       createdBy: admin._id,
-      medicalHistory: ['Insomnia', 'Chronic Joint Pain'],
+      medicalHistory: [
+        'Insomnia',
+        'Chronic Joint Pain',
+      ],
     });
 
-    const patient4 = await Patient.create({
+    await Patient.create({
       name: 'Sana Rehman',
       age: 26,
       gender: 'female',
@@ -165,14 +198,12 @@ const seedDatabase = async () => {
       medicalHistory: ['Anemia'],
     });
 
-    console.log('[Seeder] Preloaded patient demographic profiles.');
+    console.log('[Seeder] Sample patients created.');
 
-    // 3. Create Sample Appointments
-    // A completed one yesterday
+    // 3. Create sample appointments
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    
-    // An upcoming one tomorrow
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -184,7 +215,7 @@ const seedDatabase = async () => {
       reason: 'Chronic chest tightness and fatigue',
     });
 
-    const appt2 = await Appointment.create({
+    await Appointment.create({
       patientId: patient2._id,
       doctorId: doctor._id,
       date: tomorrow,
@@ -192,76 +223,117 @@ const seedDatabase = async () => {
       reason: 'Asthma follow-up checkup',
     });
 
-    const appt3 = await Appointment.create({
+    await Appointment.create({
       patientId: patient3._id,
       doctorId: doctor._id,
-      date: new Date(), // Today
+      date: new Date(),
       status: 'pending',
       reason: 'Physical exam and stress assessment',
     });
 
-    console.log('[Seeder] Booked baseline appointments.');
+    console.log('[Seeder] Sample appointments created.');
 
-    // 4. Create Sample Prescription for Ahmed Hassan
-    const prescription = await Prescription.create({
+    // 4. Create sample prescription
+    await Prescription.create({
       patientId: patient1._id,
       doctorId: doctor._id,
       appointmentId: appt1._id,
       medicines: [
-        { name: 'Amlodipine Besylate', dosage: '5mg - Once Daily', duration: '30 Days', instructions: 'Take in the morning with water' },
-        { name: 'Multivitamin Formula', dosage: '1 Tablet - Daily', duration: '15 Days', instructions: 'Take after breakfast' }
+        {
+          name: 'Amlodipine Besylate',
+          dosage: '5mg - Once Daily',
+          duration: '30 Days',
+          instructions: 'Take in the morning with water',
+        },
+        {
+          name: 'Multivitamin Formula',
+          dosage: '1 Tablet - Daily',
+          duration: '15 Days',
+          instructions: 'Take after breakfast',
+        },
       ],
-      notes: 'Limit coffee intake to max 1 cup per day. Engage in 30 minutes of cardio. Return for blood pressure review in 4 weeks.',
+      notes:
+        'Limit coffee intake to max 1 cup per day. ' +
+        'Engage in 30 minutes of cardio. ' +
+        'Return for blood pressure review in 4 weeks.',
     });
 
-    console.log('[Seeder] Logged initial diagnostic prescriptions.');
+    console.log('[Seeder] Sample prescription created.');
 
-    // 5. Create Sample Diagnosis Log for Ahmed Hassan
+    // 5. Create sample diagnosis log
     await DiagnosisLog.create({
       patientId: patient1._id,
-      symptoms: 'Chest tightness, elevated pulse rate, and afternoon exhaustion',
+      symptoms:
+        'Chest tightness, elevated pulse rate, and afternoon exhaustion',
       aiResponse: {
         possibleDiseases: [
-          { name: 'Hypertensive Cardiovascular Strain', probability: 75, description: 'Elevated circulatory load stressing cardiac pathways.' },
-          { name: 'Generalized Anxiety Tension', probability: 40, description: 'Autonomic nervous stress mimicking mechanical chest tightness.' }
+          {
+            name: 'Hypertensive Cardiovascular Strain',
+            probability: 75,
+            description:
+              'Elevated circulatory load stressing cardiac pathways.',
+          },
+          {
+            name: 'Generalized Anxiety Tension',
+            probability: 40,
+            description:
+              'Autonomic nervous stress mimicking mechanical chest tightness.',
+          },
         ],
         riskLevel: 'high',
-        suggestedTests: ['Electrocardiogram (ECG)', 'Ambulatory Blood Pressure Monitoring', 'Fasting Blood Glucose'],
-        clinicalReasoning: 'Coexistence of chronic hypertension history and acute chest load flags a high-priority cardiovascular screening profile.'
+        suggestedTests: [
+          'Electrocardiogram (ECG)',
+          'Ambulatory Blood Pressure Monitoring',
+          'Fasting Blood Glucose',
+        ],
+        clinicalReasoning:
+          'Coexistence of chronic hypertension history and acute chest load flags a high-priority cardiovascular screening profile.',
       },
       riskLevel: 'high',
       createdBy: doctor._id,
     });
 
-    console.log('[Seeder] Populated baseline AI Smart Diagnosis logs.');
-    console.log('[Seeder] Seeding sequence successfully completed!');
+    console.log(
+      '[Seeder] Local demo seeding completed successfully.'
+    );
   } catch (error) {
-    console.error(`[Seeder Error] Failed to seed database: ${error.message}`);
+    console.error(
+      '[Seeder Error] Failed to seed database:',
+      error.message
+    );
   }
 };
 
-
- // Local development
+// Local development only
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, async () => {
-    console.log(`[Server] API Target: http://localhost:${PORT}`);
+    console.log(
+      `[Server] API Target: http://localhost:${PORT}`
+    );
 
     try {
       await connectDB();
       await seedDatabase();
     } catch (error) {
-      console.error('[Server] Startup failed:', error.message);
+      console.error(
+        '[Server] Startup failed:',
+        error.message
+      );
     }
   });
 }
 
-// Vercel serverless handler (ES Modules)
+// Vercel serverless handler
 export default async function handler(req, res) {
   try {
     await connectDB();
     return app(req, res);
   } catch (error) {
-    console.error('[Server] Initialization failed:', error.message);
+    // Detailed error stays in server logs.
+    console.error(
+      '[Server] Initialization failed:',
+      error.message
+    );
 
     return res.status(500).json({
       success: false,
@@ -269,4 +341,3 @@ export default async function handler(req, res) {
     });
   }
 }
-
