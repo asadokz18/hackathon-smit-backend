@@ -22,8 +22,8 @@ import DiagnosisLog from './models/DiagnosisLog.js';
 dotenv.config();
 
 const app = express();
-const AUTHORIZED_ADMIN_EMAIL = process.env.AUTHORIZED_ADMIN_EMAIL || 'asadokz18@gmail.com';
-const AUTHORIZED_ADMIN_PASSWORD = process.env.AUTHORIZED_ADMIN_PASSWORD || 'asad123';
+const AUTHORIZED_ADMIN_EMAIL = process.env.AUTHORIZED_ADMIN_EMAIL;
+const AUTHORIZED_ADMIN_PASSWORD = process.env.AUTHORIZED_ADMIN_PASSWORD;
 
 // Middlewares
 app.use(cors());
