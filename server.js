@@ -39,8 +39,21 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // Health check
+// Root route
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'MedPulse AI Backend is running',
+    health: '/api/health'
+  });
+});
+
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date() });
+  res.json({
+    status: 'healthy',
+    timestamp: new Date()
+  });
 });
 
 // Port & Launch
