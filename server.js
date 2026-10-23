@@ -26,8 +26,22 @@ const AUTHORIZED_ADMIN_EMAIL = process.env.AUTHORIZED_ADMIN_EMAIL;
 const AUTHORIZED_ADMIN_PASSWORD = process.env.AUTHORIZED_ADMIN_PASSWORD;
 
 // Middlewares
-app.use(cors());
+
+ // Middlewares
+const allowedOrigins = [
+  'https://hackathon-smit-frontend-eight.vercel.app',
+  'http://localhost:5173',
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 app.use(express.json());
+
 
 // API Routes
 app.use('/api/auth', authRoutes);
